@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plecdill — Financial Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>  
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -820,5 +821,443 @@ function buildChart(id) {
 // Build overview charts on load
 buildChart('overview');
 </script>
+  <script>
+    // ============================================================
+// PLECDILL DASHBOARD — Google Sheets Live Integration
+// Versión final con todos los GIDs confirmados
+//
+// INSTRUCCIONES:
+// 1. Agregá esta línea ANTES de este script en tu index.html:
+//    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+// 2. Pegá este script justo antes de </body>
+// 3. Agregá los IDs a tus elementos HTML (ver sección IDs abajo)
+// ============================================================
+
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSFu-BH_7bTRPFDyhi9mCApDn6Bn_q0qoVmE7WrDVXMRU03-_EyBUjbDhwKO4SL3w/pub';
+
+const SHEET_URLS = {
+  assumptions: `${SHEET_BASE}?gid=280553817&single=true&output=csv`,
+  monthly:     `${SHEET_BASE}?gid=979200008&single=true&output=csv`,
+  scenarios:   `${SHEET_BASE}?gid=1964946152&single=true&output=csv`,
+  tam:         `${SHEET_BASE}?gid=1016074053&single=true&output=csv`,
+  dashboard:   `${SHEET_BASE}?gid=1705360806&single=true&output=csv`,
+  bankroi:     `${SHEET_BASE}?gid=1035322172&single=true&output=csv`
+};
+
+// ============================================================
+// IDs QUE DEBEN EXISTIR EN TU HTML
+// Ejemplo: <span id="metric-arr-m36">$2.34M</span>
+// ============================================================
+// metric-seed          → Seed investment
+// metric-banks-m36     → Bancos al mes 36
+// metric-arr-m36       → ARR SaaS mes 36
+// metric-moic          → MOIC estimado
+// metric-break-even    → Mes de break-even
+// metric-saas-monthly  → SaaS mensual por banco
+// metric-setup-fee     → Setup fee por banco
+// last-updated         → Timestamp de última actualización
+// loading-indicator    → Spinner mientras carga
+// sheet-error          → Mensaje de error si falla
+
+// ============================================================
+// CARGA PRINCIPAL
+// ============================================================
+async function loadAllSheetData() {
+  try {
+    showLoading(true);
+
+    const [assumptions, monthly, scenarios, tam] = await Promise.all([
+      fetchAndParse(SHEET_URLS.assumptions),
+      fetchAndParse(SHEET_URLS.monthly),
+      fetchAndParse(SHEET_URLS.scenarios),
+      fetchAndParse(SHEET_URLS.tam)
+    ]);
+
+    const inputs   = extractAssumptions(assumptions);
+    const cashflow = extractMonthly(monthly);
+    const scen     = extractScenarios(scenarios);
+    const market   = extractTAM(tam);
+
+    updateMetrics(inputs, cashflow);
+    updateCashflowChart(cashflow);
+    updateScenariosChart(scen);
+    updateTAMChart(market);
+    updateRevenueBreakdown(cashflow);
+
+    showLoading(false);
+    showLastUpdated();
+
+  } catch(err) {
+    console.error('Plecdill Sheets Error:', err);
+    showLoading(false);
+    showError('No se pudo cargar el Sheet. Verificá que esté publicado como CSV.');
+  }
+}
+
+// ============================================================
+// FETCH CON FALLBACK CORS
+// ============================================================
+async function fetchAndParse(url) {
+  let text;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    text = await res.text();
+  } catch(e) {
+    // Fallback proxy CORS para desarrollo local
+    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxy);
+    text = await res.text();
+  }
+  return Papa.parse(text, { skipEmptyLines: true }).data;
+}
+
+// ============================================================
+// EXTRACCIÓN — ASSUMPTIONS
+// ============================================================
+function extractAssumptions(rows) {
+  const map = {};
+  rows.forEach(row => {
+    if (row.length >= 3) {
+      const key = (row[1] || '').trim();
+      const val = (row[2] || '').trim().replace(/[$,%]/g, '').replace(/,/g, '');
+      if (key) map[key] = isNaN(parseFloat(val)) ? val : parseFloat(val);
+    }
+  });
+  return {
+    seed:        map['Model starting cash assumption (USD)']    || 850000,
+    saasMonthly: map['Plectra SaaS monthly per bank (USD)']     || 15000,
+    setupFee:    map['Plectra setup fee per bank (USD)']        || 75000,
+    academySetup:map['Plectra Academy setup per bank (USD)']    || 20000,
+    academyMRR:  map['Plectra Academy monthly per bank (USD)']  || 2000,
+    adilaShare:  map['Adila revenue share on Plectra SaaS']     || 0.15,
+    tam:         map['Expanded LATAM bank TAM count']            || 150,
+    sam:         map['Initial SAM bank count']                   || 60
+  };
+}
+
+// ============================================================
+// EXTRACCIÓN — MONTHLY MODEL (36 meses)
+// ============================================================
+function extractMonthly(rows) {
+  const result = {
+    totalRevenue: [], saasRevenue: [], setupRevenue: [],
+    academyRev: [], usageRev: [], totalOpex: [],
+    ebitda: [], closingCash: [], activeBanks: [], newBanks: []
+  };
+
+  const lineMap = {
+    'Total revenue':      'totalRevenue',
+    'SaaS revenue':       'saasRevenue',
+    'Setup revenue':      'setupRevenue',
+    'Plectra Academy monthly': 'academyRev',
+    'Usage revenue':      'usageRev',
+    'Total opex':         'totalOpex',
+    'EBITDA':             'ebitda',
+    'Closing cash':       'closingCash',
+    'Active banks':       'activeBanks',
+    'New banks':          'newBanks'
+  };
+
+  rows.forEach(row => {
+    const lineName = (row[0] || '').trim();
+    const key = lineMap[lineName];
+    if (!key) return;
+    for (let m = 1; m <= 36; m++) {
+      const cell  = (row[m] || '').trim();
+      const clean = cell.replace(/[$,()]/g, '').trim();
+      const num   = parseFloat(clean);
+      result[key].push(cell.startsWith('(') || cell.startsWith(' (') ? -Math.abs(num) : (isNaN(num) ? 0 : num));
+    }
+  });
+
+  return result;
+}
+
+// ============================================================
+// EXTRACCIÓN — SCENARIOS
+// ============================================================
+function extractScenarios(rows) {
+  const scenarios = { conservative: {}, base: {}, optimistic: {} };
+  const nameMap = {
+    'Conservative': 'conservative',
+    'Base':         'base',
+    'Optimistic':   'optimistic'
+  };
+
+  rows.forEach(row => {
+    const scen = nameMap[(row[0] || '').trim()];
+    if (!scen) return;
+    const year = parseInt(row[1]) || 0;
+    if (!scenarios[scen][year]) scenarios[scen][year] = {};
+    const clean = v => parseFloat((v || '').replace(/[$,]/g, '')) || 0;
+    scenarios[scen][year] = {
+      newBanks:      clean(row[2]),
+      cumBanks:      clean(row[3]),
+      totalRevenue:  clean(row[8])
+    };
+  });
+
+  return scenarios;
+}
+
+// ============================================================
+// EXTRACCIÓN — TAM/SAM/SOM
+// ============================================================
+function extractTAM(rows) {
+  const result = {};
+  rows.forEach(row => {
+    const label = (row[0] || '').trim();
+    const banks = parseFloat((row[1] || '').replace(/,/g, '')) || 0;
+    const arr   = parseFloat((row[3] || '').replace(/[$,]/g, '')) || 0;
+    if (label) result[label] = { banks, arr };
+  });
+  return result;
+}
+
+// ============================================================
+// ACTUALIZA MÉTRICAS EN EL HTML
+// ============================================================
+function updateMetrics(inputs, cashflow) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+
+  const banksM36 = cashflow.activeBanks[35] || 13;
+  const arrM36   = banksM36 * inputs.saasMonthly * 12;
+  const moic     = ((arrM36 * 6) / inputs.seed).toFixed(1);
+  const cashM36  = cashflow.closingCash[35] || 0;
+
+  // Encuentra el mes de break-even (primer mes con EBITDA positivo sostenido)
+  let breakEven = 'M28+';
+  for (let i = 0; i < cashflow.ebitda.length - 2; i++) {
+    if (cashflow.ebitda[i] > 0 && cashflow.ebitda[i+1] > 0) {
+      breakEven = 'M' + (i + 1);
+      break;
+    }
+  }
+
+  set('metric-seed',         formatUSDK(inputs.seed));
+  set('metric-banks-m36',    banksM36);
+  set('metric-arr-m36',      formatUSDM(arrM36));
+  set('metric-moic',         moic + 'x');
+  set('metric-break-even',   breakEven);
+  set('metric-saas-monthly', formatUSD(inputs.saasMonthly));
+  set('metric-setup-fee',    formatUSD(inputs.setupFee));
+  set('metric-cash-m36',     formatUSDM(cashM36));
+}
+
+// ============================================================
+// CHART: CASH FLOW (busca canvas id="cashflowChart")
+// ============================================================
+function updateCashflowChart(cashflow) {
+  const canvas = document.getElementById('cashflowChart');
+  if (!canvas || !window.Chart) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const months = Array.from({length: 36}, (_, i) => 'M' + (i+1));
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Revenue total',
+          data: cashflow.totalRevenue,
+          backgroundColor: 'rgba(55,138,221,0.7)',
+          order: 2
+        },
+        {
+          label: 'Opex total',
+          data: cashflow.totalOpex.map(v => -Math.abs(v)),
+          backgroundColor: 'rgba(216,90,48,0.5)',
+          order: 2
+        },
+        {
+          label: 'Cash acumulado',
+          data: cashflow.closingCash,
+          type: 'line',
+          borderColor: '#3B6D11',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.3,
+          yAxisID: 'y2',
+          order: 1
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 12, color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K', color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y2: { position: 'right', ticks: { callback: v => '$' + Math.round(v/1000) + 'K', color: '#3B6D11' }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// CHART: SCENARIOS (busca canvas id="scenariosChart")
+// ============================================================
+function updateScenariosChart(scen) {
+  const canvas = document.getElementById('scenariosChart');
+  if (!canvas || !window.Chart) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const getVal = (s, yr, key) => (scen[s] && scen[s][yr] && scen[s][yr][key]) || 0;
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: ['Año 1', 'Año 2', 'Año 3'],
+      datasets: [
+        {
+          label: 'Conservador',
+          data: [getVal('conservative',1,'totalRevenue'), getVal('conservative',2,'totalRevenue'), getVal('conservative',3,'totalRevenue')],
+          backgroundColor: 'rgba(136,135,128,0.7)'
+        },
+        {
+          label: 'Base',
+          data: [getVal('base',1,'totalRevenue'), getVal('base',2,'totalRevenue'), getVal('base',3,'totalRevenue')],
+          backgroundColor: 'rgba(55,138,221,0.7)'
+        },
+        {
+          label: 'Optimista',
+          data: [getVal('optimistic',1,'totalRevenue'), getVal('optimistic',2,'totalRevenue'), getVal('optimistic',3,'totalRevenue')],
+          backgroundColor: 'rgba(29,158,117,0.7)'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888' } },
+        y: { ticks: { callback: v => '$' + Math.round(v/1000) + 'K', color: '#888' }, grid: { color: 'rgba(0,0,0,0.05)' } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// CHART: REVENUE BREAKDOWN (busca canvas id="revenueChart")
+// ============================================================
+function updateRevenueBreakdown(cashflow) {
+  const canvas = document.getElementById('revenueChart');
+  if (!canvas || !window.Chart) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const months = Array.from({length: 36}, (_, i) => 'M' + (i+1));
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'Setup',    data: cashflow.setupRevenue,  backgroundColor: '#185FA5', stack: 'rev' },
+        { label: 'SaaS',     data: cashflow.saasRevenue,   backgroundColor: '#1D9E75', stack: 'rev' },
+        { label: 'Academy',  data: cashflow.academyRev,    backgroundColor: '#BA7517', stack: 'rev' },
+        { label: 'Usage',    data: cashflow.usageRev,      backgroundColor: '#888780', stack: 'rev' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { stacked: true, ticks: { maxTicksLimit: 12, color: '#888' } },
+        y: { stacked: true, ticks: { callback: v => '$' + Math.round(v/1000) + 'K', color: '#888' } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// CHART: TAM/SAM/SOM (busca canvas id="tamChart")
+// ============================================================
+function updateTAMChart(market) {
+  const canvas = document.getElementById('tamChart');
+  if (!canvas || !window.Chart) return;
+
+  const existing = Chart.getChart(canvas);
+  if (existing) existing.destroy();
+
+  const labels = Object.keys(market).slice(0, 5);
+  const arrs   = labels.map(k => market[k].arr || 0);
+
+  new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: arrs,
+        backgroundColor: ['#185FA5','#1D9E75','#BA7517','#888780','#D85A30']
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { callback: v => '$' + Math.round(v/1000000) + 'M', color: '#888' } },
+        y: { ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+// ============================================================
+// HELPERS UI
+// ============================================================
+function showLoading(on) {
+  const el = document.getElementById('loading-indicator');
+  if (el) el.style.display = on ? 'block' : 'none';
+}
+
+function showError(msg) {
+  const el = document.getElementById('sheet-error');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+  console.warn('Plecdill:', msg);
+}
+
+function showLastUpdated() {
+  const el = document.getElementById('last-updated');
+  if (el) el.textContent = 'Actualizado: ' + new Date().toLocaleString('es-AR');
+}
+
+// ============================================================
+// HELPERS FORMATO
+// ============================================================
+function formatUSD(n)  { return '$' + Math.round(n).toLocaleString('en-US'); }
+function formatUSDK(n) { return '$' + Math.round(n/1000) + 'k'; }
+function formatUSDM(n) {
+  if (Math.abs(n) >= 1000000) return (n < 0 ? '-' : '') + '$' + Math.abs(n/1000000).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1000)    return (n < 0 ? '-' : '') + '$' + Math.abs(Math.round(n/1000)) + 'K';
+  return '$' + Math.round(n);
+}
+
+// ============================================================
+// ARRANQUE — carga al abrir y refresca cada 5 minutos
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => {
+  loadAllSheetData();
+  setInterval(loadAllSheetData, 5 * 60 * 1000);
+});
+</script>
 </body>
 </html>
+    

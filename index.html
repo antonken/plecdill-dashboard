@@ -4,643 +4,854 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plecdill — Financial Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --navy:#0F2D4A;--navy2:#1A3A5C;--teal:#00B5AD;--teal-l:#E0F7F6;--teal-m:#B2EBEA;
-  --navy-l:#EBF2F8;--white:#fff;--gray:#F5F7FA;--gray2:#E2E8F0;--gray-t:#64748B;
-  --dark:#1E293B;--amber:#F59E0B;--amber-l:#FEF3C7;--red:#E24B4A;--green:#0F6E56;
-}
-body{font-family:'Inter',system-ui,sans-serif;background:#f0f4f8;color:var(--dark);min-height:100vh}
-.topbar{background:var(--navy);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.25)}
-.topbar-brand{display:flex;align-items:center;gap:12px}
-.topbar-logo{width:32px;height:32px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center}
-.topbar-logo svg{width:18px;height:18px;fill:var(--navy)}
-.topbar h1{font-size:16px;font-weight:600;color:#fff;letter-spacing:-.3px}
-.topbar p{font-size:11px;color:var(--teal);margin-top:1px}
-.topbar-badge{font-size:11px;background:rgba(0,181,173,.15);color:var(--teal);padding:4px 10px;border-radius:20px;border:1px solid rgba(0,181,173,.3)}
-.topbar-right{display:flex;align-items:center;gap:12px}
-#last-updated{font-size:10px;color:rgba(255,255,255,.4)}
-.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 56px)}
-.sidebar{background:var(--navy2);padding:1.5rem 0}
-.sidebar-section{font-size:10px;font-weight:600;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase;padding:0 1.25rem;margin:1.25rem 0 .5rem}
-.sidebar-item{display:flex;align-items:center;gap:10px;padding:.6rem 1.25rem;cursor:pointer;font-size:13px;color:rgba(255,255,255,.65);border-left:3px solid transparent;transition:all .15s}
-.sidebar-item:hover{background:rgba(255,255,255,.06);color:#fff}
-.sidebar-item.active{background:rgba(0,181,173,.12);color:var(--teal);border-left-color:var(--teal)}
-.sidebar-item svg{width:16px;height:16px;opacity:.7;flex-shrink:0}
-.sidebar-item.active svg{opacity:1}
-.sidebar-divider{height:1px;background:rgba(255,255,255,.08);margin:.75rem 0}
-.main{padding:1.75rem 2rem;overflow-y:auto}
-.page{display:none}
-.page.active{display:block}
-.page-header{margin-bottom:1.5rem}
-.page-header h2{font-size:20px;font-weight:600;color:var(--dark);letter-spacing:-.3px}
-.page-header p{font-size:13px;color:var(--gray-t);margin-top:4px}
-.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem}
-.metric-card{background:#fff;border-radius:12px;padding:1rem 1.125rem;border:1px solid var(--gray2);position:relative;overflow:hidden}
-.metric-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--teal)}
-.metric-card.navy::before{background:var(--navy)}
-.metric-card.amber::before{background:var(--amber)}
-.metric-label{font-size:11px;color:var(--gray-t);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
-.metric-val{font-size:22px;font-weight:700;color:var(--dark);letter-spacing:-.5px}
-.metric-sub{font-size:11px;color:var(--gray-t);margin-top:3px}
-.metric-val.teal{color:var(--teal)}
-.metric-val.green{color:var(--green)}
-.metric-val.red{color:var(--red)}
-.card{background:#fff;border-radius:12px;padding:1.25rem 1.5rem;border:1px solid var(--gray2);margin-bottom:1.25rem}
-.card-title{font-size:13px;font-weight:600;color:var(--dark);margin-bottom:1rem;display:flex;align-items:center;gap:8px}
-.card-title .dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
-.chart-wrap{position:relative;width:100%}
-.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:.875rem}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gray-t)}
-.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.note{background:var(--amber-l);border-left:3px solid var(--amber);border-radius:0 8px 8px 0;padding:.75rem 1rem;font-size:12px;color:#78350F;margin-top:1rem;line-height:1.6}
-.note strong{color:#92400E}
-.info{background:var(--teal-l);border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:.75rem 1rem;font-size:12px;color:var(--navy2);margin-top:1rem;line-height:1.6}
-.scen-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:1.25rem}
-.scen-card{border-radius:12px;overflow:hidden;border:1px solid var(--gray2)}
-.scen-card.featured{border-color:var(--teal);box-shadow:0 0 0 1px var(--teal)}
-.scen-head{padding:.75rem 1rem;font-size:13px;font-weight:600;color:#fff;display:flex;align-items:center;justify-content:space-between}
-.scen-badge{font-size:10px;background:rgba(255,255,255,.2);padding:2px 8px;border-radius:10px}
-.scen-body{padding:1rem}
-.scen-row{display:flex;justify-content:space-between;padding:5px 0;font-size:12.5px;border-bottom:1px solid var(--gray2)}
-.scen-row:last-child{border-bottom:none;font-weight:600;font-size:13px;margin-top:4px;padding-top:8px}
-.scen-row .k{color:var(--gray-t)}
-.scen-row .v{color:var(--dark);font-variant-numeric:tabular-nums}
-.scen-row.highlight .v{color:var(--teal);font-size:14px}
-.cf-table-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--gray2)}
-table{width:100%;border-collapse:collapse;font-size:11.5px}
-th{background:var(--navy2);color:#fff;padding:6px 8px;text-align:center;font-weight:600;white-space:nowrap}
-th.label-col{text-align:left;min-width:150px}
-td{padding:5px 8px;text-align:right;border-bottom:1px solid var(--gray2);white-space:nowrap;font-variant-numeric:tabular-nums}
-td.label-col{text-align:left;font-weight:500;color:var(--dark)}
-tr:nth-child(even) td{background:#fafbfc}
-tr.subtotal td{background:var(--navy-l);font-weight:600}
-tr.total td{background:var(--teal);color:#fff;font-weight:700}
-tr.total td.label-col{color:#fff}
-tr.opex-total td{background:var(--navy);color:#fff;font-weight:700}
-tr.opex-total td.label-col{color:#fff}
-tr.cash-row td{background:var(--navy2);color:#fff;font-weight:700}
-tr.cash-row td.label-col{color:#fff}
-td.neg{color:var(--red)}
-td.pos{color:var(--green)}
-.tam-funnel{display:flex;flex-direction:column;gap:8px;margin:1rem 0}
-.tam-bar-row{display:grid;grid-template-columns:160px 1fr 110px;gap:12px;align-items:center}
-.tam-bar-label{font-size:12px;font-weight:500;color:var(--dark);text-align:right}
-.tam-bar-track{background:var(--gray2);border-radius:6px;height:28px;overflow:hidden;position:relative}
-.tam-bar-fill{height:100%;border-radius:6px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px}
-.tam-bar-fill span{font-size:11px;font-weight:600;color:#fff}
-.tam-bar-val{font-size:12px;font-weight:600;color:var(--dark)}
-.tam-bar-sub{font-size:10px;color:var(--gray-t)}
-.roi-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem}
-.roi-card{background:var(--gray);border-radius:10px;padding:.875rem 1rem;border:1px solid var(--gray2)}
-.roi-card.highlight{background:var(--teal-l);border-color:var(--teal)}
-.roi-label{font-size:11px;color:var(--gray-t);margin-bottom:4px;font-weight:500}
-.roi-val{font-size:18px;font-weight:700}
-.roi-val.green{color:var(--green)}
-.roi-val.red{color:var(--red)}
-.roi-formula{font-size:10px;color:var(--gray-t);margin-top:3px;font-family:monospace}
-.how-section{margin-bottom:1.25rem}
-.how-section h3{font-size:14px;font-weight:600;color:var(--navy2);margin-bottom:.75rem;padding-bottom:.5rem;border-bottom:2px solid var(--teal-m)}
-.how-item{display:flex;gap:12px;margin-bottom:.875rem;padding:.75rem;background:#fff;border-radius:8px;border:1px solid var(--gray2)}
-.how-num{width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.how-text h4{font-size:13px;font-weight:600;color:var(--dark);margin-bottom:3px}
-.how-text p{font-size:12px;color:var(--gray-t);line-height:1.55}
-.formula-pill{display:inline-block;background:var(--navy-l);color:var(--navy2);font-family:monospace;font-size:11px;padding:2px 8px;border-radius:4px;margin-top:4px}
-#sheet-error{display:none;background:#FCEBEB;color:#791F1F;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:1rem}
-@media(max-width:768px){.layout{grid-template-columns:1fr}.sidebar{display:none}.scen-grid{grid-template-columns:1fr}.roi-grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}}
-.page.active .metric-card{animation:fadeUp .3s ease both}
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.metric-card:nth-child(2){animation-delay:.05s}
-.metric-card:nth-child(3){animation-delay:.1s}
-.metric-card:nth-child(4){animation-delay:.15s}
-.metric-card:nth-child(5){animation-delay:.2s}
-.metric-card:nth-child(6){animation-delay:.25s}
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #7c3aed;
+    --green: #10b981;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,14,26,0.95);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 56px;
+  }
+  .nav-brand {
+    font-family: var(--mono); font-size: 15px; font-weight: 600;
+    color: var(--accent); letter-spacing: 0.05em;
+  }
+  .nav-brand span { color: var(--muted); font-weight: 400; }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-links a {
+    color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 500;
+    padding: 6px 12px; border-radius: 6px; transition: all 0.2s; letter-spacing: 0.03em;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); background: var(--surface2); }
+  .refresh-badge {
+    font-family: var(--mono); font-size: 10px; color: var(--muted);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pulse-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+
+  /* SECTIONS */
+  section { display: none; padding: 40px 32px; max-width: 1400px; margin: 0 auto; }
+  section.active { display: block; }
+
+  h1 { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+  .section-sub { color: var(--muted); font-size: 13px; margin-bottom: 32px; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 40px; }
+  .kpi-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px 24px; position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .kpi-label { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .kpi-value { font-family: var(--mono); font-size: 28px; font-weight: 600; color: var(--text); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+  /* CHARTS */
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+  .chart-grid.full { grid-template-columns: 1fr; }
+  .chart-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+  }
+  .chart-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .chart-sub { font-size: 11px; color: var(--muted); margin-bottom: 20px; }
+  .chart-wrap { position: relative; height: 260px; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; margin-top: 24px;
+  }
+  .table-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .table-header h3 { font-size: 14px; font-weight: 600; }
+  .table-header p { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+  thead tr { background: var(--surface2); }
+  th { padding: 10px 14px; text-align: right; font-family: var(--mono); font-size: 10px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
+  th:first-child { text-align: left; position: sticky; left: 0; background: var(--surface2); z-index: 2; min-width: 160px; }
+  td { padding: 9px 14px; text-align: right; font-family: var(--mono); font-size: 11px; border-bottom: 1px solid rgba(30,45,69,0.5); }
+  td:first-child { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1; color: var(--muted); font-size: 11px; }
+  tr:hover td { background: var(--surface2); }
+  tr:hover td:first-child { background: var(--surface2); }
+  .row-revenue td { color: #34d399; }
+  .row-revenue td:first-child { color: var(--muted); }
+  .row-opex td { color: #f87171; }
+  .row-opex td:first-child { color: var(--muted); }
+  .row-ebitda td { font-weight: 600; }
+  .row-cash td { color: var(--accent); font-weight: 600; }
+  .row-cash td:first-child { color: var(--muted); font-weight: 400; }
+  .pos { color: var(--green) !important; }
+  .neg { color: var(--red) !important; }
+  .row-sep td { background: var(--surface2) !important; border-top: 1px solid var(--border); padding: 2px 0; }
+
+  /* SCENARIO CARDS */
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+  .scenario-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px;
+    position: relative;
+  }
+  .scenario-card.active-scenario { border-color: var(--accent); }
+  .scenario-card.active-scenario::after {
+    content: '← central'; position: absolute; top: 16px; right: 16px;
+    font-size: 10px; color: var(--accent); font-family: var(--mono);
+  }
+  .scenario-name { font-size: 13px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+  .scenario-kpi { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .scenario-kpi-label { font-size: 11px; color: var(--muted); }
+  .scenario-kpi-value { font-family: var(--mono); font-size: 12px; font-weight: 600; }
+
+  /* TAM FUNNEL */
+  .tam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .funnel-bar { margin-bottom: 12px; }
+  .funnel-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .funnel-track { background: var(--surface2); border-radius: 4px; height: 8px; overflow: hidden; }
+  .funnel-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.8s ease; }
+
+  /* LOADING */
+  .loading-overlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 999; gap: 16px;
+  }
+  .loading-logo { font-family: var(--mono); font-size: 24px; color: var(--accent); }
+  .loading-text { font-size: 12px; color: var(--muted); font-family: var(--mono); }
+  .loading-bar { width: 200px; height: 2px; background: var(--surface2); border-radius: 2px; overflow: hidden; }
+  .loading-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); animation: load 1.5s ease-in-out infinite; }
+  @keyframes load { 0% { width: 0; margin-left: 0; } 50% { width: 100%; margin-left: 0; } 100% { width: 0; margin-left: 100%; } }
+
+  /* INSIGHT BOX */
+  .insight { background: var(--surface2); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; padding: 14px 18px; font-size: 12px; color: var(--muted); line-height: 1.7; margin-top: 20px; }
+  .insight strong { color: var(--text); }
+
+  /* ROI TABLE */
+  .roi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .roi-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .roi-item:last-child { border: none; }
+  .roi-item-label { font-size: 12px; color: var(--muted); }
+  .roi-item-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+
+  @media (max-width: 768px) {
+    nav { padding: 0 16px; }
+    .nav-links { display: none; }
+    section { padding: 24px 16px; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .scenario-grid { grid-template-columns: 1fr; }
+    .tam-grid { grid-template-columns: 1fr; }
+    .roi-grid { grid-template-columns: 1fr; }
+    .kpi-grid { grid-template-columns: repeat(2,1fr); }
+  }
 </style>
 </head>
 <body>
 
-<nav class="topbar">
-  <div class="topbar-brand">
-    <div class="topbar-logo">
-      <svg viewBox="0 0 20 20"><path d="M10 2L3 7v6l7 5 7-5V7L10 2z"/></svg>
-    </div>
-    <div>
-      <h1>Plecdill</h1>
-      <p>Plectra.ai + Adila Fin &amp; Pay · Financial Model</p>
-    </div>
+<div class="loading-overlay" id="loader">
+  <div class="loading-logo">PLECDILL</div>
+  <div class="loading-text" id="loader-text">Conectando con Google Sheets...</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+</div>
+
+<nav>
+  <div class="nav-brand">PLECDILL <span>· Plectra.ai + Adila Fin & Pay</span></div>
+  <div class="nav-links">
+    <a href="#" onclick="show('dashboard')" id="tab-dashboard" class="active">Dashboard</a>
+    <a href="#" onclick="show('cashflow')" id="tab-cashflow">Cash Flow</a>
+    <a href="#" onclick="show('scenarios')" id="tab-scenarios">Escenarios</a>
+    <a href="#" onclick="show('tam')" id="tab-tam">TAM / SAM</a>
+    <a href="#" onclick="show('roi')" id="tab-roi">Bank ROI</a>
+    <a href="#" onclick="show('docs')" id="tab-docs">Docs</a>
   </div>
-  <div class="topbar-right">
-    <span id="last-updated"></span>
-    <div class="topbar-badge">Live · Junio 2026</div>
+  <div class="refresh-badge">
+    <div class="pulse-dot"></div>
+    <span id="last-refresh">actualizando...</span>
   </div>
 </nav>
 
-<div class="layout">
-<aside class="sidebar">
-  <div class="sidebar-section">Overview</div>
-  <div class="sidebar-item active" onclick="nav('overview',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-    Dashboard
+<!-- DASHBOARD -->
+<section id="dashboard" class="active">
+  <h1>Dashboard · Base Case</h1>
+  <p class="section-sub">Modelo de 36 meses · Seed $850k · Base = bancos activos al mes 36</p>
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card"><div class="kpi-label">Seed Investment</div><div class="kpi-value" id="kpi-seed">$850k</div><div class="kpi-sub">rango $750k–$950k</div></div>
+    <div class="kpi-card"><div class="kpi-label">Bancos base (M36)</div><div class="kpi-value" id="kpi-banks">—</div><div class="kpi-sub">del SAM de 60</div></div>
+    <div class="kpi-card"><div class="kpi-label">ARR SaaS (M36)</div><div class="kpi-value" id="kpi-arr">—</div><div class="kpi-sub">SaaS recurrente anualizado</div></div>
+    <div class="kpi-card"><div class="kpi-label">ACV por banco</div><div class="kpi-value" id="kpi-acv">—</div><div class="kpi-sub">SaaS anual por banco</div></div>
+    <div class="kpi-card"><div class="kpi-label">Break-even</div><div class="kpi-value" id="kpi-be">—</div><div class="kpi-sub">primer EBITDA+ sostenido</div></div>
+    <div class="kpi-card"><div class="kpi-label">MOIC @ 6x ARR</div><div class="kpi-value" id="kpi-moic">—</div><div class="kpi-sub">ilustrativo · base case</div></div>
   </div>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section">Modelo</div>
-  <div class="sidebar-item" onclick="nav('cashflow',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Cash Flow
-  </div>
-  <div class="sidebar-item" onclick="nav('scenarios',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
-    Scenarios
-  </div>
-  <div class="sidebar-item" onclick="nav('tam',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-    TAM / SAM / SOM
-  </div>
-  <div class="sidebar-item" onclick="nav('roi',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-    Bank ROI
-  </div>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section">Docs</div>
-  <div class="sidebar-item" onclick="nav('howbuilt',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    Cómo está armado
-  </div>
-</aside>
-
-<main class="main">
-<div id="sheet-error"></div>
-
-<!-- OVERVIEW -->
-<div id="page-overview" class="page active">
-  <div class="page-header">
-    <h2>Dashboard · Base Case</h2>
-    <p>Modelo de 36 meses · Capital $1.15M · Base = 14 bancos · Break-even M23</p>
-  </div>
-  <div class="metrics">
-    <div class="metric-card">
-      <div class="metric-label">Seed investment</div>
-      <div class="metric-val" id="metric-seed">$1.15M</div>
-      <div class="metric-sub">rango $750k–$950k</div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">ARR por escenario · fin de año</div>
+      <div class="chart-sub">Conservative / Base / Optimistic</div>
+      <div class="chart-wrap"><canvas id="chart-arr-scenarios"></canvas></div>
     </div>
-    <div class="metric-card">
-      <div class="metric-label">Bancos base (M36)</div>
-      <div class="metric-val teal" id="metric-banks-m36">14</div>
-      <div class="metric-sub">23.3% del SAM de 60</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">ARR SaaS base (M36)</div>
-      <div class="metric-val" id="metric-arr-m36">$1.91M</div>
-      <div class="metric-sub">$18k/mes × 14 × 12</div>
-    </div>
-    <div class="metric-card navy">
-      <div class="metric-label">ACV por banco</div>
-      <div class="metric-val" id="metric-saas-monthly">$216k</div>
-      <div class="metric-sub">Tier 3 $18k × 12</div>
-    </div>
-    <div class="metric-card amber">
-      <div class="metric-label">Break-even (base)</div>
-      <div class="metric-val" id="metric-break-even">M23</div>
-      <div class="metric-sub">cash flow positivo</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">MOIC @ 6x ARR</div>
-      <div class="metric-val teal" id="metric-moic">10.0x</div>
-      <div class="metric-sub">ilustrativo · base case</div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue base case · desglose mensual</div>
+      <div class="chart-sub">Setup + SaaS + Academy + Usage</div>
+      <div class="chart-wrap"><canvas id="chart-rev-breakdown"></canvas></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
-    <div class="card">
-      <div class="card-title"><div class="dot"></div>ARR por escenario (fin de año)</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#6B7280"></div>Conservative</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#00B5AD"></div>Base</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#0F2D4A"></div>Optimistic</div>
-      </div>
-      <div class="chart-wrap" style="height:200px"><canvas id="arrChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><div class="dot"></div>Revenue base case · desglose por stream</div>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#0F2D4A"></div>Setup</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#00B5AD"></div>SaaS</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#1A3A5C"></div>Academy</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#B2EBEA"></div>Usage</div>
-      </div>
-      <div class="chart-wrap" style="height:200px"><canvas id="stackChart"></canvas></div>
-    </div>
+  <div class="insight">
+    <strong>Cómo leer los números:</strong> El ARR es la métrica central para VCs en SaaS. Se calcula como bancos activos × SaaS mensual × 12.
+    Los picos de revenue corresponden a setup fees de nuevos tiers. El MOIC es orientativo y usa un múltiplo conservador de 6x ARR para SaaS enterprise B2B seed.
   </div>
-  <div class="info"><strong>Cómo leer los números:</strong> El ARR es la métrica central para VCs en SaaS. Se calcula como bancos activos × $15,000/mes × 12. El modelo base asume el primer banco en M6, 5 bancos al cierre del año 2 y 13 al cierre del año 3.</div>
-</div>
+</section>
 
 <!-- CASH FLOW -->
-<div id="page-cashflow" class="page">
-  <div class="page-header">
-    <h2>Cash Flow · 36 meses</h2>
-    <p>Base case · Seed $850k · Todos los números en USD</p>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="dot"></div>Revenue vs Opex mensual + posición de caja</div>
-    <div class="legend">
-      <div class="legend-item"><div class="legend-dot" style="background:#00B5AD"></div>Revenue total</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#0F2D4A"></div>Opex total</div>
-      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Closing cash</div>
+<section id="cashflow">
+  <h1>Cash Flow · 36 meses</h1>
+  <p class="section-sub">Base case · Todos los números en USD · Datos en tiempo real desde Google Sheets</p>
+  <div class="chart-grid full">
+    <div class="chart-card">
+      <div class="chart-title">Revenue vs Opex mensual + posición de caja</div>
+      <div class="chart-sub">Revenue total · Opex total · Closing cash (eje der.)</div>
+      <div class="chart-wrap" style="height:300px"><canvas id="chart-cashflow"></canvas></div>
     </div>
-    <div class="chart-wrap" style="height:280px"><canvas id="cfChart"></canvas></div>
   </div>
-  <div class="card">
-    <div class="card-title"><div class="dot"></div>Tabla mensual resumida (M1–M36)</div>
-    <div class="cf-table-wrap">
-      <table id="cfTable">
-        <thead>
-          <tr>
-            <th class="label-col">Línea</th>
-            <th>M1</th><th>M2</th><th>M3</th><th>M4</th><th>M5</th><th>M6</th>
-            <th>M7</th><th>M8</th><th>M9</th><th>M10</th><th>M11</th><th>M12</th>
-            <th>M13</th><th>M14</th><th>M15</th><th>M16</th><th>M17</th><th>M18</th>
-            <th>M19</th><th>M20</th><th>M21</th><th>M22</th><th>M23</th><th>M24</th>
-            <th>M25</th><th>M26</th><th>M27</th><th>M28</th><th>M29</th><th>M30</th>
-            <th>M31</th><th>M32</th><th>M33</th><th>M34</th><th>M35</th><th>M36</th>
-          </tr>
-        </thead>
-        <tbody id="cfTbody"></tbody>
+  <div class="table-card">
+    <div class="table-header">
+      <h3>Tabla mensual completa · M1–M36</h3>
+      <p>Datos en tiempo real desde Google Sheets · Monthly Model</p>
+    </div>
+    <div class="table-scroll">
+      <table id="cf-table">
+        <thead id="cf-thead"></thead>
+        <tbody id="cf-tbody"></tbody>
       </table>
     </div>
   </div>
-</div>
+  <div class="insight">
+    <strong>Puntos de inflexión:</strong> M1 = Galicia entra (Tier 1 + coinversor $450K). M9 = Investor Fase 2 (+$700K) + Banco 2.
+    Break-even sostenido en <strong id="be-month">M23</strong>. Cash M36: <strong id="cash-m36">—</strong>.
+  </div>
+</section>
 
 <!-- SCENARIOS -->
-<div id="page-scenarios" class="page">
-  <div class="page-header">
-    <h2>Scenarios · 3 escenarios · 36 meses</h2>
-    <p>Mismo opex en los tres. La variable es velocidad de onboarding de bancos.</p>
-  </div>
-  <div class="scen-grid">
-    <div class="scen-card">
-      <div class="scen-head" style="background:#6B7280">Conservative <span class="scen-badge">7 bancos</span></div>
-      <div class="scen-body">
-        <div class="scen-row"><span class="k">Bancos Y3</span><span class="v">7</span></div>
-        <div class="scen-row"><span class="k">ARR M36</span><span class="v">$1.26M</span></div>
-        <div class="scen-row"><span class="k">EV @ 6x</span><span class="v">$7.56M</span></div>
-        <div class="scen-row highlight"><span class="k">MOIC</span><span class="v">8.9x</span></div>
-      </div>
+<section id="scenarios">
+  <h1>Escenarios · 3 proyecciones · 36 meses</h1>
+  <p class="section-sub">Mismo opex en los tres. Variable: velocidad de onboarding de bancos.</p>
+  <div class="scenario-grid" id="scenario-cards"></div>
+  <div class="chart-grid">
+    <div class="chart-card">
+      <div class="chart-title">Bancos acumulados por año</div>
+      <div class="chart-sub">Conservative / Base / Optimistic</div>
+      <div class="chart-wrap"><canvas id="chart-banks-year"></canvas></div>
     </div>
-    <div class="scen-card featured">
-      <div class="scen-head" style="background:#00B5AD">Base <span class="scen-badge">13 bancos ← central</span></div>
-      <div class="scen-body">
-        <div class="scen-row"><span class="k">Bancos Y3</span><span class="v">13</span></div>
-        <div class="scen-row"><span class="k">ARR M36</span><span class="v">$2.34M</span></div>
-        <div class="scen-row"><span class="k">EV @ 6x</span><span class="v">$14.04M</span></div>
-        <div class="scen-row highlight"><span class="k">MOIC</span><span class="v teal">16.5x</span></div>
-      </div>
-    </div>
-    <div class="scen-card">
-      <div class="scen-head" style="background:#0F2D4A">Optimistic <span class="scen-badge">20 bancos</span></div>
-      <div class="scen-body">
-        <div class="scen-row"><span class="k">Bancos Y3</span><span class="v">20</span></div>
-        <div class="scen-row"><span class="k">ARR M36</span><span class="v">$3.60M</span></div>
-        <div class="scen-row"><span class="k">EV @ 6x</span><span class="v">$21.60M</span></div>
-        <div class="scen-row highlight"><span class="k">MOIC</span><span class="v">25.4x</span></div>
-      </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue total acumulado · 3 años</div>
+      <div class="chart-sub">USD · suma de setup + SaaS + Academy + usage</div>
+      <div class="chart-wrap"><canvas id="chart-rev-total"></canvas></div>
     </div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
-    <div class="card">
-      <div class="card-title"><div class="dot"></div>Bancos acumulados por año</div>
-      <div class="chart-wrap" style="height:220px"><canvas id="banksChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="card-title"><div class="dot"></div>Revenue total acumulado 3 años</div>
-      <div class="chart-wrap" style="height:220px"><canvas id="revTotalChart"></canvas></div>
-    </div>
+  <div class="insight">
+    <strong>Los tres escenarios comparten el mismo opex.</strong> La diferencia es exclusivamente la velocidad de onboarding.
+    Cambiar el SaaS pricing en Assumptions mejora los tres escenarios proporcionalmente.
   </div>
-</div>
+</section>
 
 <!-- TAM -->
-<div id="page-tam" class="page">
-  <div class="page-header">
-    <h2>TAM / SAM / SOM</h2>
-    <p>Enfoque bottom-up: bancos × ACV.</p>
+<section id="tam">
+  <h1>TAM / SAM / SOM</h1>
+  <p class="section-sub">Enfoque bottom-up: bancos × ACV. Más defendible que estadísticas top-down.</p>
+  <div class="kpi-grid" style="grid-template-columns: repeat(3,1fr); margin-bottom:32px;">
+    <div class="kpi-card"><div class="kpi-label">TAM · LATAM banks</div><div class="kpi-value" id="tam-val">$27M</div><div class="kpi-sub" id="tam-sub">150 bancos × $180k ARR</div></div>
+    <div class="kpi-card"><div class="kpi-label">SAM · 5 países</div><div class="kpi-value" id="sam-val">$10.8M</div><div class="kpi-sub" id="sam-sub">60 bancos × $180k ARR</div></div>
+    <div class="kpi-card"><div class="kpi-label">SOM base · año 3</div><div class="kpi-value" id="som-val">$2.34M</div><div class="kpi-sub" id="som-sub">13 bancos · 21.7% del SAM</div></div>
   </div>
-  <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
-    <div class="metric-card">
-      <div class="metric-label">TAM · LATAM banks</div>
-      <div class="metric-val">$27M</div>
-      <div class="metric-sub">150 bancos × $180k ARR</div>
+  <div class="tam-grid">
+    <div class="chart-card">
+      <div class="chart-title">Funnel de mercado</div>
+      <div class="chart-sub">TAM → SAM → SOM proporcional</div>
+      <div id="funnel-bars" style="margin-top:16px;"></div>
     </div>
-    <div class="metric-card">
-      <div class="metric-label">SAM · 5 países</div>
-      <div class="metric-val">$10.8M</div>
-      <div class="metric-sub">60 bancos × $180k ARR</div>
-    </div>
-    <div class="metric-card">
-      <div class="metric-label">SOM base · año 3</div>
-      <div class="metric-val teal">$2.34M</div>
-      <div class="metric-sub">13 bancos · 21.7% del SAM</div>
+    <div class="chart-card">
+      <div class="chart-title">Contexto de mercado adyacente</div>
+      <div class="chart-sub">Tamaño del ecosistema — referencia</div>
+      <div id="market-context" style="margin-top:16px;"></div>
     </div>
   </div>
-  <div class="card">
-    <div class="card-title"><div class="dot"></div>Funnel de mercado</div>
-    <div class="tam-funnel">
-      <div class="tam-bar-row">
-        <div class="tam-bar-label">TAM · LATAM</div>
-        <div class="tam-bar-track"><div class="tam-bar-fill" style="width:100%;background:var(--navy)"><span>150 bancos</span></div></div>
-        <div><div class="tam-bar-val">$27.0M ARR</div><div class="tam-bar-sub">oportunidad total</div></div>
-      </div>
-      <div class="tam-bar-row">
-        <div class="tam-bar-label">SAM · 5 países</div>
-        <div class="tam-bar-track"><div class="tam-bar-fill" style="width:40%;background:var(--navy2)"><span>60 bancos</span></div></div>
-        <div><div class="tam-bar-val">$10.8M ARR</div><div class="tam-bar-sub">mercado servible</div></div>
-      </div>
-      <div class="tam-bar-row">
-        <div class="tam-bar-label">SOM base</div>
-        <div class="tam-bar-track"><div class="tam-bar-fill" style="width:8.7%;background:var(--teal)"><span>13</span></div></div>
-        <div><div class="tam-bar-val">$2.34M ARR</div><div class="tam-bar-sub">21.7% del SAM</div></div>
-      </div>
-    </div>
+  <div class="insight">
+    <strong>Por qué bottom-up:</strong> Contar bancos reales es más creíble para inversores seed que multiplicar estadísticas de mercado.
+    Cada banco en LATAM que adopta Plecdill vale $180k ARR (solo SaaS). Con módulos y usage, el ACV real puede superar $200k anuales.
   </div>
-</div>
+</section>
 
-<!-- ROI -->
-<div id="page-roi" class="page">
-  <div class="page-header">
-    <h2>Bank ROI · Calculadora ilustrativa</h2>
-    <p>Piloto con 50 usuarios internos</p>
-  </div>
+<!-- BANK ROI -->
+<section id="roi">
+  <h1>Bank ROI · Calculadora ilustrativa</h1>
+  <p class="section-sub">Piloto con 50 usuarios internos · Caso de uso mínimo</p>
   <div class="roi-grid">
-    <div class="roi-card"><div class="roi-label">Labor savings / mes</div><div class="roi-val green">$14,063</div><div class="roi-formula">50 usuarios × $3k × 0.75h / 8h</div></div>
-    <div class="roi-card"><div class="roi-label">Ticket savings / mes</div><div class="roi-val green">$3,600</div><div class="roi-formula">300 tickets × $12 c/u</div></div>
-    <div class="roi-card"><div class="roi-label">Cross-sell margin / mes</div><div class="roi-val green">$4,000</div><div class="roi-formula">8 productos × $500 margen</div></div>
-    <div class="roi-card highlight"><div class="roi-label">Beneficio mensual total</div><div class="roi-val green">$21,663</div></div>
-    <div class="roi-card"><div class="roi-label">Costo mensual SaaS</div><div class="roi-val red">$23,000</div></div>
-    <div class="roi-card"><div class="roi-label">Net benefit piloto</div><div class="roi-val red">-$1,338</div><div class="roi-formula">casi break-even en M1</div></div>
-  </div>
-  <div class="card">
-    <div class="card-title"><div class="dot"></div>Benefit vs costo mensual</div>
-    <div class="chart-wrap" style="height:220px"><canvas id="roiChart"></canvas></div>
-  </div>
-</div>
-
-<!-- HOW BUILT -->
-<div id="page-howbuilt" class="page">
-  <div class="page-header">
-    <h2>Cómo están armados los números</h2>
-    <p>Lógica detrás de cada línea del modelo financiero</p>
-  </div>
-  <div class="how-section">
-    <h3>Revenue</h3>
-    <div class="how-item">
-      <div class="how-num">1</div>
-      <div class="how-text"><h4>Setup fee — one-time por banco nuevo</h4><p>Cada banco que firma genera $75,000 de entrada.</p><div class="formula-pill">Revenue setup = new_banks_month × $75,000</div></div>
+    <div class="chart-card">
+      <div class="chart-title">Desglose mensual — beneficios vs costo</div>
+      <div class="chart-sub">50 usuarios · atención, tickets, cross-sell</div>
+      <div id="roi-items"></div>
     </div>
-    <div class="how-item">
-      <div class="how-num">2</div>
-      <div class="how-text"><h4>SaaS recurrente — el motor del ARR</h4><p>$15,000/mes por banco activo. ARR = bancos × $15k × 12.</p><div class="formula-pill">SaaS revenue = active_banks × $15,000</div></div>
+    <div class="chart-card">
+      <div class="chart-title">Benefit vs costo por escala</div>
+      <div class="chart-sub">50 → 200 usuarios</div>
+      <div class="chart-wrap" style="height:220px;"><canvas id="chart-roi"></canvas></div>
     </div>
   </div>
-  <div class="info"><strong>Para editar los números:</strong> Todos los inputs están en la pestaña <strong>Assumptions</strong> del Google Sheet. Cambiar cualquier valor actualiza el dashboard automáticamente en la próxima carga.</div>
-</div>
+  <div class="insight">
+    <strong>Por qué el ROI mejora rápido:</strong> Con solo 50 usuarios y 3 casos de uso el banco está casi en break-even.
+    Al escalar a 100+ usuarios y activar 4+ dominios, el beneficio mensual se duplica sin que el costo de SaaS cambie.
+    El payback del setup ($75k) ocurre típicamente entre M6 y M10.
+  </div>
+</section>
 
-</main>
-</div>
+<!-- DOCS -->
+<section id="docs">
+  <h1>Cómo están armados los números</h1>
+  <p class="section-sub">Lógica detrás de cada línea del modelo financiero</p>
+  <div style="display:grid; gap:16px; max-width:800px;">
+    <div class="chart-card">
+      <div class="chart-title">① Setup fee — one-time por banco nuevo</div>
+      <div class="chart-sub" style="margin-bottom:8px;">Cada banco que firma genera un setup fee de entrada por tier. Cubre discovery, integración SAP/Mambu y onboarding.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">Setup = new_banks_month × ($50k T1 / $75k T2 / $120k T3)</code>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">② SaaS recurrente — el motor del ARR</div>
+      <div class="chart-sub" style="margin-bottom:8px;">Cada banco activo paga SaaS mensual según su tier. ARR = bancos activos × SaaS/mes × 12.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">SaaS = active_banks × ($3k T1 / $10k T2 / $18k T3)</code>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">③ Progresión de tiers por banco</div>
+      <div class="chart-sub" style="margin-bottom:8px;">Cada banco sigue la misma progresión sin excepción.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">M1–3: Tier 1 PoC · M4–12: Tier 2 Enterprise · M13+: Tier 3 Autonomous</code>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">④ Opex escalonado</div>
+      <div class="chart-sub" style="margin-bottom:8px;">El burn sube en hitos de contratación, no linealmente.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">M1–8: $37,500/mes (Fase 1 · 10 personas) · M9+: $68,000/mes (Fase 2 · 14 personas)</code>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⑤ Cash flow y break-even</div>
+      <div class="chart-sub" style="margin-bottom:8px;">Arranca con $450K de Galicia (M1) + $700K de Investor Fase 2 (M9). Cierre mensual acumulado.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">Closing[m] = Closing[m-1] + (Revenue[m] − Opex[m])</code>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">⑥ Valuación ilustrativa — 6x ARR SaaS</div>
+      <div class="chart-sub" style="margin-bottom:8px;">Múltiplo conservador para SaaS enterprise B2B seed. Solo orientativo.</div>
+      <code style="font-family:var(--mono);font-size:11px;color:var(--accent);">MOIC = (ARR_M36 × 6x) / $850k seed</code>
+    </div>
+    <div class="insight">
+      <strong>Para editar los números:</strong> Abrí el Google Sheet → tab <strong>Assumptions</strong> → cambiá cualquier celda azul.
+      El dashboard se actualiza automáticamente en ~5 minutos. Los cambios en Assumptions se propagan a Monthly Model → Scenarios → TAM → Bank ROI → este dashboard.
+    </div>
+  </div>
+</section>
 
 <script>
-function nav(id, el) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
-  document.getElementById('page-' + id).classList.add('active');
-  el.classList.add('active');
-  if (!window['chart_' + id + '_built']) buildChart(id);
+// ─── CONFIG ────────────────────────────────────────────────────
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrK-dkCTOVho6W_qIwCE4fDJXkup5eWwwGt6ZLXG2nnw3XFPjJ44gS1J_ZVNTfrg/pub';
+const GIDS = {
+  assumptions:  '2089886587',
+  monthly:      '2000583046',
+  scenarios:    '500494005',
+  tam:          '670271283',
+  dashboard:    '673018984',
+  bankroi:      '1654415186'
+};
+const REFRESH_MS = 5 * 60 * 1000;
+
+// ─── CHARTS registry ───────────────────────────────────────────
+const charts = {};
+
+// ─── HELPERS ───────────────────────────────────────────────────
+function csvUrl(gid) {
+  return `${SHEET_BASE}?gid=${gid}&single=true&output=csv&t=${Date.now()}`;
 }
 
-const staticData = {
-  totalRev: [75000, 5000, 5000, 87000, 12000, 12000, 12000, 12000, 87000, 17000, 17000, 99000, 156000, 36000, 36000, 36000, 113000, 43000, 43000, 202000, 185000, 65000, 224000, 79000, 94000, 256000, 191000, 121000, 411000, 308000, 163000, 453000, 350000, 285000, 505000, 402000],
-  totalOpex: [37500, 37500, 37500, 37500, 37500, 37500, 37500, 37500, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000],
-  closing: [487500, 455000, 422500, 472000, 446500, 421000, 395500, 370000, 1089000, 1038000, 987000, 1018000, 1106000, 1074000, 1042000, 1010000, 1055000, 1030000, 1005000, 1139000, 1256000, 1253000, 1409000, 1420000, 1446000, 1634000, 1757000, 1810000, 2153000, 2393000, 2488000, 2873000, 3155000, 3372000, 3809000, 4143000],
-  newBanks: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1],
-  saas: [3000, 3000, 3000, 10000, 10000, 10000, 10000, 10000, 13000, 13000, 13000, 20000, 28000, 28000, 28000, 28000, 31000, 31000, 31000, 41000, 49000, 49000, 59000, 59000, 59000, 69000, 72000, 72000, 90000, 100000, 100000, 118000, 128000, 131000, 149000, 159000],
-  setup: [50000, 0, 0, 75000, 0, 0, 0, 0, 50000, 0, 0, 75000, 120000, 0, 0, 0, 50000, 0, 0, 125000, 120000, 0, 125000, 0, 0, 125000, 50000, 0, 245000, 125000, 0, 245000, 125000, 50000, 245000, 125000],
-  academy: [22000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 24000, 4000, 4000, 4000, 4000, 4000, 4000, 4000, 26000, 6000, 6000, 28000, 8000, 8000, 30000, 10000, 10000, 32000, 34000, 14000, 36000, 38000, 18000, 40000, 42000, 44000, 46000, 48000],
-  usage: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4000, 4000, 4000, 4000, 6000, 6000, 6000, 8000, 8000, 8000, 10000, 10000, 25000, 30000, 35000, 35000, 40000, 45000, 45000, 50000, 55000, 60000, 65000, 70000],
-  founders: [28500,28500,28500,28500,28500,28500,28500,28500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500,51500],
-  techPay: [9000,9000,9000,9000,9000,9000,9000,9000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000,20000],
-  cloud: [5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000],
-  legal: [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500],
-  mktg: [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000],
+async function fetchCSV(gid) {
+  const r = await fetch(csvUrl(gid));
+  const text = await r.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  return lines.map(line => {
+    const cells = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
+}
+
+function cleanNum(s) {
+  if (!s) return 0;
+  const n = parseFloat(s.replace(/[$,%\s]/g, '').replace(/\(([^)]+)\)/, '-$1'));
+  return isNaN(n) ? 0 : n;
+}
+
+function fmt(n, short) {
+  if (n === 0 || n === null || n === undefined) return '—';
+  const abs = Math.abs(n);
+  if (short) {
+    if (abs >= 1e6) return (n/1e6).toFixed(2) + 'M';
+    if (abs >= 1e3) return (n/1e3).toFixed(0) + 'k';
+    return n.toLocaleString();
+  }
+  return '$' + n.toLocaleString('en-US', {maximumFractionDigits:0});
+}
+
+function fmtCell(n) {
+  if (n === 0) return '—';
+  const s = '$' + Math.abs(n).toLocaleString('en-US', {maximumFractionDigits:0});
+  return n < 0 ? `(${s})` : s;
+}
+
+// ─── NAVIGATION ────────────────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+  return false;
+}
+
+// ─── CHART HELPERS ─────────────────────────────────────────────
+const CHART_DEFAULTS = {
+  color: '#e2e8f0',
+  gridColor: 'rgba(30,45,69,0.8)',
+  font: "'IBM Plex Mono', monospace"
 };
 
-let liveData = null;
+function makeChart(id, config) {
+  if (charts[id]) charts[id].destroy();
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  charts[id] = new Chart(ctx, config);
+}
 
-const fmt = (v) => v === 0 ? '—' : (v < 0 ? '-$' : '$') + Math.abs(Math.round(v)).toLocaleString('en-US');
-const fmtK = (v) => (v < 0 ? '-$' : '$') + Math.round(Math.abs(v)/1000) + 'k';
-const NAVY='#0F2D4A', NAVY2='#1A3A5C', TEAL='#00B5AD', GRAY='#6B7280', AMBER='#F59E0B', TEAL_L='#B2EBEA';
+// ─── MONTHLY MODEL ─────────────────────────────────────────────
+async function loadMonthly() {
+  const rows = await fetchCSV(GIDS.monthly);
+  // rows[0] = header: "Line item", M1, M2, ...
+  const header = rows[0];
+  const months = header.slice(1); // M1..M36
 
-function buildCFTable(d) {
-  const months = Array.from({length:36}, (_,i) => i);
-  const activeBanks = months.map(m => d.newBanks.slice(0,m+1).reduce((a,b)=>a+b,0));
-  const rows = [
-    {label:'Active banks', data: activeBanks, fmt:'int', cls:''},
-    {label:'Setup revenue', data: d.setup, fmt:'usd', cls:''},
-    {label:'SaaS revenue', data: d.saas, fmt:'usd', cls:''},
-    {label:'Academy', data: d.academy, fmt:'usd', cls:''},
-    {label:'Usage revenue', data: d.usage, fmt:'usd', cls:''},
-    {label:'TOTAL REVENUE', data: d.totalRev, fmt:'usd', cls:'total'},
-    {label:'Founders', data: d.founders, fmt:'usd', cls:''},
-    {label:'Tech payroll', data: d.techPay, fmt:'usd', cls:''},
-    {label:'Cloud/LLM', data: d.cloud, fmt:'usd', cls:''},
-    {label:'Legal/G&A', data: d.legal, fmt:'usd', cls:''},
-    {label:'Marketing', data: d.mktg, fmt:'usd', cls:''},
-    {label:'TOTAL OPEX', data: d.totalOpex, fmt:'usd', cls:'opex-total'},
-    {label:'EBITDA', data: d.totalRev.map((v,i)=>v-d.totalOpex[i]), fmt:'usd', cls:'subtotal'},
-    {label:'CLOSING CASH', data: d.closing, fmt:'usd', cls:'cash-row'},
+  // Find rows by label
+  const find = (label) => {
+    const r = rows.find(r => r[0] && r[0].toLowerCase().includes(label.toLowerCase()));
+    return r ? r.slice(1).map(cleanNum) : new Array(36).fill(0);
+  };
+
+  const totalRev    = find('Total revenue');
+  const totalOpex   = find('Total opex');
+  const ebitda      = find('EBITDA');
+  const closing     = find('Closing cash');
+  const saas        = find('Total SaaS revenue');
+  const setup       = find('Total setup revenue');
+  const academy     = find('Academy monthly');
+  const usage       = find('Usage revenue');
+  const activeBanks = find('Active banks');
+
+  // KPIs
+  const banksM36 = activeBanks[35];
+  const saasM36  = saas[35];
+  const arrM36   = saasM36 * 12;
+  const acv      = saasM36 > 0 && banksM36 > 0 ? (saasM36 / banksM36) * 12 : 180000;
+  const moic     = arrM36 > 0 ? ((arrM36 * 6) / 850000).toFixed(1) + 'x' : '—';
+  
+  // Break-even: first month where EBITDA >= 0 and next month also >= 0
+  let beMonth = '—';
+  for (let i = 0; i < ebitda.length - 1; i++) {
+    if (ebitda[i] >= 0 && ebitda[i+1] >= 0) { beMonth = 'M' + (i+1); break; }
+  }
+
+  document.getElementById('kpi-banks').textContent = banksM36 || '—';
+  document.getElementById('kpi-arr').textContent = '$' + (arrM36/1e6).toFixed(2) + 'M';
+  document.getElementById('kpi-acv').textContent = '$' + (acv/1e3).toFixed(0) + 'k';
+  document.getElementById('kpi-be').textContent = beMonth;
+  document.getElementById('kpi-moic').textContent = moic;
+  document.getElementById('be-month').textContent = beMonth;
+  document.getElementById('cash-m36').textContent = fmt(closing[35], true);
+
+  // Cash Flow chart
+  const labels = months;
+  makeChart('chart-cashflow', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Revenue', data: totalRev, backgroundColor: 'rgba(16,185,129,0.7)', yAxisID: 'y' },
+        { label: 'Opex',    data: totalOpex, backgroundColor: 'rgba(239,68,68,0.6)', yAxisID: 'y' },
+        { label: 'Cash',    data: closing, type: 'line', borderColor: '#00d4ff', backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { family: CHART_DEFAULTS.font, size: 10 } } } },
+      scales: {
+        x: { ticks: { color: CHART_DEFAULTS.color, font: { size: 9 }, maxTicksLimit: 12 }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { ticks: { color: CHART_DEFAULTS.color, font: { size: 9 }, callback: v => '$'+Math.abs(v/1000).toFixed(0)+'k' }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y2: { position: 'right', ticks: { color: '#00d4ff', font: { size: 9 }, callback: v => '$'+(v/1000).toFixed(0)+'k' }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Revenue breakdown stacked
+  makeChart('chart-rev-breakdown', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Setup',   data: setup,   backgroundColor: 'rgba(124,58,237,0.8)', stack: 'rev' },
+        { label: 'SaaS',    data: saas,    backgroundColor: 'rgba(0,212,255,0.7)',  stack: 'rev' },
+        { label: 'Academy', data: academy, backgroundColor: 'rgba(245,158,11,0.7)', stack: 'rev' },
+        { label: 'Usage',   data: usage,   backgroundColor: 'rgba(16,185,129,0.7)', stack: 'rev' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { family: CHART_DEFAULTS.font, size: 10 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: CHART_DEFAULTS.color, font: { size: 9 }, maxTicksLimit: 12 }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { stacked: true, ticks: { color: CHART_DEFAULTS.color, font: { size: 9 }, callback: v => '$'+(v/1000).toFixed(0)+'k' }, grid: { color: CHART_DEFAULTS.gridColor } }
+      }
+    }
+  });
+
+  // Build table
+  const thead = document.getElementById('cf-thead');
+  const tbody = document.getElementById('cf-tbody');
+  
+  const hRow = document.createElement('tr');
+  hRow.innerHTML = '<th>Línea</th>' + months.map(m => `<th>${m}</th>`).join('');
+  thead.innerHTML = '';
+  thead.appendChild(hRow);
+
+  const displayRows = [
+    { label: 'Total Revenue',    data: totalRev,  cls: 'row-revenue' },
+    { label: '  › Setup',        data: setup,     cls: '' },
+    { label: '  › SaaS',         data: saas,      cls: '' },
+    { label: '  › Academy',      data: academy,   cls: '' },
+    { label: '  › Usage',        data: usage,     cls: '' },
+    { label: 'Total Opex',       data: totalOpex, cls: 'row-opex' },
+    { label: 'EBITDA',           data: ebitda,    cls: 'row-ebitda' },
+    { label: 'Closing Cash',     data: closing,   cls: 'row-cash' }
   ];
-  const tbody = document.getElementById('cfTbody');
+
   tbody.innerHTML = '';
-  rows.forEach(row => {
+  displayRows.forEach(({label, data, cls}) => {
     const tr = document.createElement('tr');
-    tr.className = row.cls;
-    const td0 = document.createElement('td');
-    td0.className = 'label-col'; td0.textContent = row.label;
-    tr.appendChild(td0);
-    row.data.forEach(v => {
-      const td = document.createElement('td');
-      td.textContent = row.fmt === 'int' ? (v === 0 ? '—' : v) : fmt(v);
-      if (!row.cls && v < 0) td.className = 'neg';
-      if ((row.cls === 'cash-row' || row.cls === 'subtotal') && v < 0) td.style.color = '#ff8080';
-      tr.appendChild(td);
+    if (cls) tr.className = cls;
+    let cells = `<td>${label}</td>`;
+    data.forEach((v, i) => {
+      let cell = fmtCell(v);
+      let extra = '';
+      if (cls === 'row-ebitda') extra = v >= 0 ? ' class="pos"' : ' class="neg"';
+      cells += `<td${extra}>${cell}</td>`;
     });
+    tr.innerHTML = cells;
     tbody.appendChild(tr);
   });
+
+  return { totalRev, saas, setup, academy, usage, closing, activeBanks };
 }
 
-buildCFTable(staticData);
+// ─── DASHBOARD TAB - ARR scenarios chart ───────────────────────
+async function loadScenarioChart() {
+  const rows = await fetchCSV(GIDS.scenarios);
+  // Expect rows with scenario data: look for ARR Y1/Y2/Y3 per scenario
+  // Parse what's available; fallback to Monthly Model derived values
+  // Scenarios sheet: rows might have "Conservative"/"Base"/"Optimistic" + year ARR
 
-function buildChart(id) {
-  window['chart_' + id + '_built'] = true;
-  const d = liveData || staticData;
+  const labels = ['Y1','Y2','Y3'];
+  let conserv = [0,0,0], base = [0,0,0], optim = [0,0,0];
 
-  if (id === 'overview') {
-    new Chart(document.getElementById('arrChart'), {
-      type:'bar', data:{labels:['Year 1','Year 2','Year 3'],datasets:[
-        {label:'Conservative',data:[156000,720000,1728000],backgroundColor:GRAY,borderRadius:5},
-        {label:'Base',data:[156000,1080000,1908000],backgroundColor:TEAL,borderRadius:5},
-        {label:'Optimistic',data:[234000,1620000,3888000],backgroundColor:NAVY,borderRadius:5},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
-    });
-    new Chart(document.getElementById('stackChart'), {
-      type:'bar', data:{labels:['Year 1','Year 2','Year 3'],datasets:[
-        {label:'Setup',data:[75000,300000,600000],backgroundColor:NAVY},
-        {label:'SaaS',data:[90000,540000,1620000],backgroundColor:TEAL},
-        {label:'Academy',data:[32000,152000,376000],backgroundColor:NAVY2},
-        {label:'Usage',data:[0,72000,540000],backgroundColor:TEAL_L},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{stacked:true,grid:{display:false}},y:{stacked:true,ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
-    });
-  }
+  rows.forEach(r => {
+    const label = (r[0]||'').toLowerCase();
+    if (label.includes('conservative')) { conserv = [cleanNum(r[1]),cleanNum(r[2]),cleanNum(r[3])]; }
+    if (label.includes('base'))         { base    = [cleanNum(r[1]),cleanNum(r[2]),cleanNum(r[3])]; }
+    if (label.includes('optimis'))      { optim   = [cleanNum(r[1]),cleanNum(r[2]),cleanNum(r[3])]; }
+  });
 
-  if (id === 'cashflow') {
-    new Chart(document.getElementById('cfChart'), {
-      type:'bar', data:{labels:Array.from({length:36},(_,i)=>`M${i+1}`),datasets:[
-        {label:'Revenue',data:d.totalRev,backgroundColor:TEAL,borderRadius:2,order:2},
-        {label:'Opex',data:d.totalOpex.map(v=>-v),backgroundColor:NAVY,borderRadius:2,order:2},
-        {label:'Cash',data:d.closing,type:'line',borderColor:AMBER,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,order:1,yAxisID:'y2'},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9},maxTicksLimit:18}},y:{ticks:{callback:v=>fmtK(v),font:{size:9}},grid:{color:'rgba(0,0,0,.05)'}},y2:{position:'right',grid:{display:false},ticks:{callback:v=>fmtK(v),font:{size:9},color:AMBER}}}}
-    });
-  }
+  // Fallback if Sheet doesn't expose ARR rows cleanly
+  if (conserv.every(v=>v===0)) conserv = [216000, 864000, 1260000];
+  if (base.every(v=>v===0))    base    = [216000, 1188000, 2340000];
+  if (optim.every(v=>v===0))   optim   = [432000, 1728000, 3600000];
 
-  if (id === 'scenarios') {
-    new Chart(document.getElementById('banksChart'), {
-      type:'bar', data:{labels:['Year 1','Year 2','Year 3'],datasets:[
-        {label:'Conservative',data:[1,3,7],backgroundColor:GRAY,borderRadius:5},
-        {label:'Base',data:[1,5,13],backgroundColor:TEAL,borderRadius:5},
-        {label:'Optimistic',data:[2,8,20],backgroundColor:NAVY,borderRadius:5},
-      ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:'rgba(0,0,0,.05)'}}}}
-    });
-    new Chart(document.getElementById('revTotalChart'), {
-      type:'bar', data:{labels:['Conservative','Base','Optimistic'],datasets:[{data:[2540000,4397000,6940000],backgroundColor:[GRAY,TEAL,NAVY],borderRadius:8}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
-    });
-  }
-
-  if (id === 'roi') {
-    new Chart(document.getElementById('roiChart'), {
-      type:'bar', data:{labels:['Labor savings','Ticket savings','Cross-sell','Total benefit','Monthly cost'],datasets:[{data:[14063,3600,4000,21663,-23000],backgroundColor:[TEAL,TEAL,TEAL,NAVY,'#E24B4A'],borderRadius:6}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{callback:v=>fmt(v),font:{size:10}}},y:{grid:{display:false}}}}
-    });
-  }
-}
-
-buildChart('overview');
-
-// ── GOOGLE SHEETS LIVE INTEGRATION ──
-const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrK-dkCTOVho6W_qIwCE4fDJXkup5eWwwGt6ZLXG2nnw3XFPjJ44gS1J_ZVNTfrg/pub';
-const SHEET_URLS = {
-  assumptions: `${SHEET_BASE}?gid=2089886587&single=true&output=csv`,
-  monthly:     `${SHEET_BASE}?gid=2000583046&single=true&output=csv`,
-};
-
-async function fetchCSV(url) {
-  try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.text();
-  } catch(e) {
-    const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-    const res = await fetch(proxy);
-    return await res.text();
-  }
-}
-
-function extractAssumptions(rows) {
-  const map = {};
-  rows.forEach(row => {
-    if (row.length >= 3) {
-      const key = (row[1] || '').trim();
-      const rawVal = (row[2] || '').trim().replace(/[$%]/g,'').trim();
-      const val = rawVal.includes(',') && rawVal.includes('.') 
-        ? rawVal.replace(/,/g,'')
-        : rawVal.replace(/\./g,'').replace(/,/g,'.');
-      if (key) map[key] = isNaN(parseFloat(val)) ? val : parseFloat(val);
+  makeChart('chart-arr-scenarios', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Conservative', data: conserv, backgroundColor: 'rgba(100,116,139,0.8)' },
+        { label: 'Base',         data: base,    backgroundColor: 'rgba(0,212,255,0.8)' },
+        { label: 'Optimistic',   data: optim,   backgroundColor: 'rgba(124,58,237,0.8)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { family: CHART_DEFAULTS.font, size: 10 } } } },
+      scales: {
+        x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { ticks: { color: CHART_DEFAULTS.color, callback: v => '$'+(v/1e6).toFixed(1)+'M' }, grid: { color: CHART_DEFAULTS.gridColor } }
+      }
     }
   });
-  return {
-    seed:        map['Model starting cash Fase 1 (USD)'] || 450000,
-    saasMonthly: map['Tier 3 Autonomous - SaaS monthly (USD)'] || 18000,
-    setupFee:    map['Tier 2 Enterprise - Setup fee (USD)'] || 75000,
-    investor2:   map['Investor Fase 2 - Month 9 (USD)'] || 700000,
-  };
+
+  return { conserv, base, optim };
 }
 
-function extractMonthly(rows) {
-  const result = { totalRevenue:[], totalOpex:[], ebitda:[], closingCash:[], activeBanks:[], newBanks:[], saasRevenue:[], setupRevenue:[], academyRev:[], usageRev:[] };
-  const lineMap = {
-    'Total revenue':'totalRevenue','SaaS revenue':'saasRevenue','Setup revenue':'setupRevenue',
-    'Plectra Academy monthly':'academyRev','Usage revenue':'usageRev',
-    'Total opex':'totalOpex','EBITDA':'ebitda','Closing cash':'closingCash',
-    'Active banks':'activeBanks','New banks':'newBanks'
-  };
-  rows.forEach(row => {
-    const key = lineMap[(row[0]||'').trim()];
-    if (!key) return;
-    for (let m=1; m<=36; m++) {
-      const cell = (row[m]||'').trim();
-      // Handle both US format ($75,000) and Argentine format ($75.000)
-      const stripped = cell.replace(/[$()]/g,'').trim();
-      const clean = stripped.includes(',') && stripped.includes('.') 
-        ? stripped.replace(/,/g,'')  // US: $1,089,000 -> 1089000
-        : stripped.replace(/\./g,'').replace(/,/g,'.');  // AR: $1.089.000 -> 1089000
-      const num = parseFloat(clean);
-      result[key].push(cell.startsWith('(') ? -Math.abs(num) : (isNaN(num) ? 0 : num));
+// ─── SCENARIOS SECTION ─────────────────────────────────────────
+async function loadScenarios(scenData) {
+  const { conserv, base, optim } = scenData;
+  
+  const scenarios = [
+    { name: 'Conservative · 7 bancos', banks: [1,3,7], arr: conserv[2], rev3y: conserv.reduce((a,b)=>a+b,0)*1.5, active: false, color: '#64748b' },
+    { name: 'Base · 13 bancos',        banks: [1,5,13], arr: base[2],    rev3y: base.reduce((a,b)=>a+b,0)*1.5,    active: true,  color: '#00d4ff' },
+    { name: 'Optimistic · 20 bancos',  banks: [2,8,20], arr: optim[2],   rev3y: optim.reduce((a,b)=>a+b,0)*1.5,   active: false, color: '#7c3aed' }
+  ];
+
+  const container = document.getElementById('scenario-cards');
+  container.innerHTML = scenarios.map(s => `
+    <div class="scenario-card ${s.active ? 'active-scenario' : ''}">
+      <div class="scenario-name">${s.name}</div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">Bancos Y1</span><span class="scenario-kpi-value">${s.banks[0]}</span></div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">Bancos Y2</span><span class="scenario-kpi-value">${s.banks[1]}</span></div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">Bancos Y3</span><span class="scenario-kpi-value">${s.banks[2]}</span></div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">ARR M36</span><span class="scenario-kpi-value" style="color:${s.color}">$${(s.arr/1e6).toFixed(2)}M</span></div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">EV @ 6x</span><span class="scenario-kpi-value">$${(s.arr*6/1e6).toFixed(2)}M</span></div>
+      <div class="scenario-kpi"><span class="scenario-kpi-label">MOIC</span><span class="scenario-kpi-value">${(s.arr*6/850000).toFixed(1)}x</span></div>
+    </div>
+  `).join('');
+
+  const labels = ['Y1','Y2','Y3'];
+  makeChart('chart-banks-year', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Conservative', data: [1,3,7],   backgroundColor: 'rgba(100,116,139,0.8)' },
+        { label: 'Base',         data: [1,5,13],  backgroundColor: 'rgba(0,212,255,0.8)' },
+        { label: 'Optimistic',   data: [2,8,20],  backgroundColor: 'rgba(124,58,237,0.8)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } }
+      }
     }
   });
-  return result;
+
+  makeChart('chart-rev-total', {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Conservative', data: conserv, backgroundColor: 'rgba(100,116,139,0.8)' },
+        { label: 'Base',         data: base,    backgroundColor: 'rgba(0,212,255,0.8)' },
+        { label: 'Optimistic',   data: optim,   backgroundColor: 'rgba(124,58,237,0.8)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { ticks: { color: CHART_DEFAULTS.color, callback: v => '$'+(v/1e6).toFixed(1)+'M' }, grid: { color: CHART_DEFAULTS.gridColor } }
+      }
+    }
+  });
 }
 
-function updateMetricsFromSheet(inputs, monthly) {
-  const banksM36 = monthly.activeBanks[35] || 13;
-  const arrM36   = banksM36 * inputs.saasMonthly * 12;
-  const moic     = ((arrM36 * 6) / inputs.seed).toFixed(1);
-  let breakEven  = 'M28+';
-  for (let i=0; i<(monthly.ebitda.length-2); i++) {
-    if (monthly.ebitda[i]>0 && monthly.ebitda[i+1]>0) { breakEven='M'+(i+1); break; }
-  }
-  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  const totalCapital = (inputs.seed + inputs.investor2) / 1000000;
-  set('metric-seed', '$'+totalCapital.toFixed(2)+'M');
-  set('metric-banks-m36',  banksM36);
-  set('metric-arr-m36',    '$'+(arrM36/1000000).toFixed(2)+'M');
-  set('metric-moic',       moic+'x');
-  set('metric-break-even', breakEven);
-  set('metric-saas-monthly','$'+Math.round(inputs.saasMonthly*12/1000)+'k');
+// ─── TAM ────────────────────────────────────────────────────────
+async function loadTAM() {
+  const rows = await fetchCSV(GIDS.tam);
+  // Try to pull TAM/SAM/SOM values from sheet; fallback to defaults
+  let tam = 27000000, sam = 10800000, som = 2340000;
+  let tamBanks = 150, samBanks = 60, somBanks = 13;
+
+  rows.forEach(r => {
+    const label = (r[0]||'').toLowerCase();
+    if (label.includes('tam')) { const v = cleanNum(r[1]||r[2]); if(v>0) tam = v; }
+    if (label.includes('sam')) { const v = cleanNum(r[1]||r[2]); if(v>0) sam = v; }
+    if (label.includes('som') && label.includes('base')) { const v = cleanNum(r[1]||r[2]); if(v>0) som = v; }
+  });
+
+  document.getElementById('tam-val').textContent = '$' + (tam/1e6).toFixed(0) + 'M';
+  document.getElementById('sam-val').textContent = '$' + (sam/1e6).toFixed(1) + 'M';
+  document.getElementById('som-val').textContent = '$' + (som/1e6).toFixed(2) + 'M';
+  document.getElementById('tam-sub').textContent = tamBanks + ' bancos × $180k ARR';
+  document.getElementById('sam-sub').textContent = samBanks + ' bancos × $180k ARR';
+  document.getElementById('som-sub').textContent = somBanks + ' bancos · ' + ((somBanks/samBanks)*100).toFixed(1) + '% del SAM';
+
+  const funnelItems = [
+    { label: 'TAM · LATAM (150 bancos)', pct: 100, val: '$27M ARR' },
+    { label: 'SAM · 5 países (60 bancos)', pct: 40, val: '$10.8M ARR' },
+    { label: 'SOM conservador (7)', pct: 11.7, val: '$1.26M ARR' },
+    { label: 'SOM base (13)', pct: 21.7, val: '$2.34M ARR' },
+    { label: 'SOM optimista (20)', pct: 33.3, val: '$3.60M ARR' }
+  ];
+  document.getElementById('funnel-bars').innerHTML = funnelItems.map(f => `
+    <div class="funnel-bar">
+      <div class="funnel-label"><span>${f.label}</span><span style="font-family:var(--mono);color:var(--accent)">${f.val}</span></div>
+      <div class="funnel-track"><div class="funnel-fill" style="width:${f.pct}%"></div></div>
+    </div>
+  `).join('');
+
+  const markets = [
+    { label: 'Core banking LATAM 2025', val: '$1.86B', note: '→ $3.76B en 2033' },
+    { label: 'IA en finanzas LATAM 2023', val: '$1.54B', note: '→ $13.1B en 2032' },
+    { label: 'GenAI valor banca global/año', val: '$200–340B', note: 'McKinsey' }
+  ];
+  document.getElementById('market-context').innerHTML = markets.map(m => `
+    <div class="roi-item">
+      <div><div class="roi-item-label">${m.label}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${m.note}</div></div>
+      <div class="roi-item-value" style="color:var(--accent)">${m.val}</div>
+    </div>
+  `).join('');
 }
 
-async function loadSheetData() {
+// ─── BANK ROI ───────────────────────────────────────────────────
+async function loadROI() {
+  const rows = await fetchCSV(GIDS.bankroi);
+  
+  // Defaults
+  let labor = 14063, tickets = 3600, crossell = 4000, saas = 15000, adila = 8000;
+  
+  rows.forEach(r => {
+    const label = (r[0]||'').toLowerCase();
+    const val = cleanNum(r[1]||r[2]||r[3]);
+    if (label.includes('labor')) labor = val || labor;
+    if (label.includes('ticket')) tickets = val || tickets;
+    if (label.includes('cross')) crossell = val || crossell;
+    if (label.includes('saas')) saas = val || saas;
+    if (label.includes('adila') || label.includes('support')) adila = val || adila;
+  });
+
+  const benefitTotal = labor + tickets + crossell;
+  const costTotal = saas + adila;
+  const net = benefitTotal - costTotal;
+
+  const items = [
+    { label: 'Labor savings / mes', val: labor, note: '50 usuarios × $3k × 0.75h/8h', color: 'var(--green)' },
+    { label: 'Ticket savings / mes', val: tickets, note: '300 tickets × $12 c/u', color: 'var(--green)' },
+    { label: 'Cross-sell margin / mes', val: crossell, note: '8 productos × $500 margen', color: 'var(--green)' },
+    { label: 'Beneficio mensual total', val: benefitTotal, note: 'suma de tres streams', color: '#34d399', bold: true },
+    { label: 'Costo mensual (SaaS + Adila)', val: -costTotal, note: `$${(saas/1000).toFixed(0)}k SaaS + $${(adila/1000).toFixed(0)}k soporte`, color: 'var(--red)' },
+    { label: 'Net benefit piloto (50 users)', val: net, note: net < 0 ? 'casi break-even en M1' : 'positivo desde M1', color: net >= 0 ? 'var(--green)' : 'var(--amber)', bold: true }
+  ];
+
+  document.getElementById('roi-items').innerHTML = items.map(item => `
+    <div class="roi-item">
+      <div><div class="roi-item-label">${item.label}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">${item.note}</div></div>
+      <div class="roi-item-value" style="color:${item.color};${item.bold?'font-size:16px':''}">${fmtCell(item.val)}</div>
+    </div>
+  `).join('');
+
+  // ROI scaling chart
+  const userLevels = [50, 75, 100, 150, 200];
+  const benefits = userLevels.map(u => Math.round((u/50) * benefitTotal));
+  const costs = userLevels.map(() => costTotal);
+
+  makeChart('chart-roi', {
+    type: 'bar',
+    data: {
+      labels: userLevels.map(u => u + ' users'),
+      datasets: [
+        { label: 'Beneficio mensual', data: benefits, backgroundColor: 'rgba(16,185,129,0.8)' },
+        { label: 'Costo mensual',     data: costs,    backgroundColor: 'rgba(239,68,68,0.6)' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: CHART_DEFAULTS.color, font: { size: 10 } } } },
+      scales: {
+        x: { ticks: { color: CHART_DEFAULTS.color }, grid: { color: CHART_DEFAULTS.gridColor } },
+        y: { ticks: { color: CHART_DEFAULTS.color, callback: v => '$'+(v/1000).toFixed(0)+'k' }, grid: { color: CHART_DEFAULTS.gridColor } }
+      }
+    }
+  });
+}
+
+// ─── MAIN LOAD ──────────────────────────────────────────────────
+async function loadAll() {
+  const loader = document.getElementById('loader');
+  const loaderText = document.getElementById('loader-text');
+
   try {
-    const [aText, mText] = await Promise.all([fetchCSV(SHEET_URLS.assumptions), fetchCSV(SHEET_URLS.monthly)]);
-    const assumptions = extractAssumptions(Papa.parse(aText,{skipEmptyLines:true}).data);
-    const monthly     = extractMonthly(Papa.parse(mText,{skipEmptyLines:true}).data);
-    updateMetricsFromSheet(assumptions, monthly);
-    // Always use staticData for the table - Sheet data only updates metrics
-    buildCFTable(staticData);
-    const el = document.getElementById('last-updated');
-    if (el) el.textContent = 'Live · ' + new Date().toLocaleTimeString('es-AR');
-  } catch(err) {
-    console.warn('Sheet load failed, using static data:', err);
-    const el = document.getElementById('last-updated');
-    if (el) el.textContent = 'Datos estáticos';
+    loaderText.textContent = 'Cargando Monthly Model...';
+    await loadMonthly();
+
+    loaderText.textContent = 'Cargando Scenarios...';
+    const scenData = await loadScenarioChart();
+
+    loaderText.textContent = 'Cargando Scenarios view...';
+    await loadScenarios(scenData);
+
+    loaderText.textContent = 'Cargando TAM / SAM...';
+    await loadTAM();
+
+    loaderText.textContent = 'Cargando Bank ROI...';
+    await loadROI();
+
+    const now = new Date();
+    document.getElementById('last-refresh').textContent =
+      'live · ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+    loader.style.display = 'none';
+  } catch (err) {
+    loaderText.textContent = 'Error: ' + err.message;
+    console.error(err);
+    setTimeout(() => loader.style.display = 'none', 3000);
   }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  loadSheetData();
-  setInterval(loadSheetData, 5 * 60 * 1000);
-});
+// ─── AUTO REFRESH ───────────────────────────────────────────────
+loadAll();
+setInterval(loadAll, REFRESH_MS);
 </script>
 </body>
 </html>

@@ -178,37 +178,37 @@ td.pos{color:var(--green)}
 <div id="page-overview" class="page active">
   <div class="page-header">
     <h2>Dashboard · Base Case</h2>
-    <p>Modelo de 36 meses · Seed $850k · Base = 13 bancos al mes 36</p>
+    <p>Modelo de 36 meses · Capital $1.15M · Base = 14 bancos · Break-even M23</p>
   </div>
   <div class="metrics">
     <div class="metric-card">
       <div class="metric-label">Seed investment</div>
-      <div class="metric-val" id="metric-seed">$850k</div>
+      <div class="metric-val" id="metric-seed">$1.15M</div>
       <div class="metric-sub">rango $750k–$950k</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">Bancos base (M36)</div>
-      <div class="metric-val teal" id="metric-banks-m36">13</div>
-      <div class="metric-sub">21.7% del SAM de 60</div>
+      <div class="metric-val teal" id="metric-banks-m36">14</div>
+      <div class="metric-sub">23.3% del SAM de 60</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">ARR SaaS base (M36)</div>
-      <div class="metric-val" id="metric-arr-m36">$2.34M</div>
-      <div class="metric-sub">$15k/mes × 13 × 12</div>
+      <div class="metric-val" id="metric-arr-m36">$1.91M</div>
+      <div class="metric-sub">$18k/mes × 14 × 12</div>
     </div>
     <div class="metric-card navy">
       <div class="metric-label">ACV por banco</div>
-      <div class="metric-val" id="metric-saas-monthly">$180k</div>
-      <div class="metric-sub">SaaS $15k × 12</div>
+      <div class="metric-val" id="metric-saas-monthly">$216k</div>
+      <div class="metric-sub">Tier 3 $18k × 12</div>
     </div>
     <div class="metric-card amber">
       <div class="metric-label">Break-even (base)</div>
-      <div class="metric-val" id="metric-break-even">M24–28</div>
+      <div class="metric-val" id="metric-break-even">M23</div>
       <div class="metric-sub">cash flow positivo</div>
     </div>
     <div class="metric-card">
       <div class="metric-label">MOIC @ 6x ARR</div>
-      <div class="metric-val teal" id="metric-moic">16.5x</div>
+      <div class="metric-val teal" id="metric-moic">10.0x</div>
       <div class="metric-sub">ilustrativo · base case</div>
     </div>
   </div>
@@ -417,19 +417,19 @@ function nav(id, el) {
 }
 
 const staticData = {
-  totalRev: [0,0,0,0,0,112000,17000,17000,17000,17000,17000,17000,19000,19000,133000,38000,38000,152000,57000,57000,171000,76000,76000,190000,110000,110000,227000,249000,154000,271000,293000,198000,315000,337000,359000,381000],
-  totalOpex: [65000,65000,70000,75000,75000,75000,78000,78000,78000,78000,78000,78000,99000,99000,99000,99000,99000,99000,99000,99000,99000,99000,99000,99000,116000,116000,116000,116000,116000,116000,116000,116000,116000,116000,116000,116000],
-  closing: [462500,425000,387500,350000,312500,275000,237500,200000,939000,883000,827000,771000,717000,663000,609000,555000,610000,570000,530000,599000,573000,547000,630000,618000,618000,730000,859000,893000,1039000,1202000,1270000,1450000,1647000,1861000,2092000,3191000],
-  newBanks: [0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,1,0,1,1,0,1,1,1,1],
-  saas: [0,0,0,0,0,15000,15000,15000,15000,15000,15000,15000,15000,15000,30000,30000,30000,45000,45000,45000,60000,60000,60000,75000,75000,75000,90000,105000,105000,120000,135000,135000,150000,165000,180000,195000],
-  setup: [0,0,0,0,0,75000,0,0,0,0,0,0,0,0,75000,0,0,75000,0,0,75000,0,0,75000,0,0,75000,75000,0,75000,75000,0,75000,75000,75000,75000],
-  academy: [0,0,0,0,0,22000,2000,2000,2000,2000,2000,2000,2000,2000,24000,4000,4000,26000,6000,6000,28000,8000,8000,30000,10000,10000,32000,34000,14000,36000,38000,18000,40000,42000,44000,46000],
-  usage: [0,0,0,0,0,0,0,0,0,0,0,0,2000,2000,4000,4000,4000,6000,6000,6000,8000,8000,8000,10000,25000,25000,30000,35000,35000,40000,45000,45000,50000,55000,60000,65000],
-  founders: Array(36).fill(21000),
-  techPay: [32000,32000,37000,42000,42000,42000,45000,45000,45000,45000,45000,45000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000,54000],
-  cloud: [...Array(12).fill(5000),...Array(12).fill(12000),...Array(12).fill(22000)],
-  legal: [...Array(12).fill(4000),...Array(12).fill(6000),...Array(12).fill(9000)],
-  mktg: [...Array(12).fill(3000),...Array(12).fill(6000),...Array(12).fill(10000)],
+  totalRev: [75000, 5000, 5000, 87000, 12000, 12000, 12000, 12000, 87000, 17000, 17000, 99000, 156000, 36000, 36000, 36000, 113000, 43000, 43000, 202000, 185000, 65000, 224000, 79000, 94000, 256000, 191000, 121000, 411000, 308000, 163000, 453000, 350000, 285000, 505000, 402000],
+  totalOpex: [37500, 37500, 37500, 37500, 37500, 37500, 37500, 37500, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000, 68000],
+  closing: [487500, 455000, 422500, 472000, 446500, 421000, 395500, 370000, 1089000, 1038000, 987000, 1018000, 1106000, 1074000, 1042000, 1010000, 1055000, 1030000, 1005000, 1139000, 1256000, 1253000, 1409000, 1420000, 1446000, 1634000, 1757000, 1810000, 2153000, 2393000, 2488000, 2873000, 3155000, 3372000, 3809000, 4143000],
+  newBanks: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1],
+  saas: [3000, 3000, 3000, 10000, 10000, 10000, 10000, 10000, 13000, 13000, 13000, 20000, 28000, 28000, 28000, 28000, 31000, 31000, 31000, 41000, 49000, 49000, 59000, 59000, 59000, 69000, 72000, 72000, 90000, 100000, 100000, 118000, 128000, 131000, 149000, 159000],
+  setup: [50000, 0, 0, 75000, 0, 0, 0, 0, 50000, 0, 0, 75000, 120000, 0, 0, 0, 50000, 0, 0, 125000, 120000, 0, 125000, 0, 0, 125000, 50000, 0, 245000, 125000, 0, 245000, 125000, 50000, 245000, 125000],
+  academy: [22000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 24000, 4000, 4000, 4000, 4000, 4000, 4000, 4000, 26000, 6000, 6000, 28000, 8000, 8000, 30000, 10000, 10000, 32000, 34000, 14000, 36000, 38000, 18000, 40000, 42000, 44000, 46000, 48000],
+  usage: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4000, 4000, 4000, 4000, 6000, 6000, 6000, 8000, 8000, 8000, 10000, 10000, 25000, 30000, 35000, 35000, 40000, 45000, 45000, 50000, 55000, 60000, 65000, 70000],
+  founders: Array(36).fill(0).map((_,i) => i<8?28500:51500),
+  techPay: Array(36).fill(0).map((_,i) => i<8?9000:20000),
+  cloud: [5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000],
+  legal: [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500],
+  mktg: [2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000, 5000],
 };
 
 let liveData = null;
@@ -485,9 +485,9 @@ function buildChart(id) {
   if (id === 'overview') {
     new Chart(document.getElementById('arrChart'), {
       type:'bar', data:{labels:['Year 1','Year 2','Year 3'],datasets:[
-        {label:'Conservative',data:[90000,360000,900000],backgroundColor:GRAY,borderRadius:5},
-        {label:'Base',data:[90000,540000,1620000],backgroundColor:TEAL,borderRadius:5},
-        {label:'Optimistic',data:[180000,900000,2520000],backgroundColor:NAVY,borderRadius:5},
+        {label:'Conservative',data:[156000,720000,1728000],backgroundColor:GRAY,borderRadius:5},
+        {label:'Base',data:[156000,1080000,1908000],backgroundColor:TEAL,borderRadius:5},
+        {label:'Optimistic',data:[234000,1620000,3888000],backgroundColor:NAVY,borderRadius:5},
       ]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)}}},scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>fmtK(v)},grid:{color:'rgba(0,0,0,.05)'}}}}
     });
@@ -539,10 +539,10 @@ function buildChart(id) {
 buildChart('overview');
 
 // ── GOOGLE SHEETS LIVE INTEGRATION ──
-const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQw76zP82cQOXMrlYyBEroPEUorqqqV6wjeUj40rwpXVlw7jX1J5fa0gbVLx8l7Vw/pub';
+const SHEET_BASE = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSrK-dkCTOVho6W_qIwCE4fDJXkup5eWwwGt6ZLXG2nnw3XFPjJ44gS1J_ZVNTfrg/pub';
 const SHEET_URLS = {
-  assumptions: `${SHEET_BASE}?gid=55378506&single=true&output=csv`,
-  monthly:     `${SHEET_BASE}?gid=777661647&single=true&output=csv`,
+  assumptions: `${SHEET_BASE}?gid=2089886587&single=true&output=csv`,
+  monthly:     `${SHEET_BASE}?gid=2000583046&single=true&output=csv`,
 };
 
 async function fetchCSV(url) {
@@ -567,20 +567,18 @@ function extractAssumptions(rows) {
     }
   });
   return {
-    seed:        map['Model starting cash assumption (USD)'] || 850000,
-    saasMonthly: map['Plectra SaaS monthly per bank (USD)']  || 15000,
-    setupFee:    map['Plectra setup fee per bank (USD)']     || 75000,
+    seed:        map['Model starting cash Fase 1 (USD)'] || 450000,
+    saasMonthly: map['Tier 3 Autonomous - SaaS monthly (USD)'] || 18000,
+    setupFee:    map['Tier 2 Enterprise - Setup fee (USD)'] || 75000,
+    investor2:   map['Investor Fase 2 - Month 9 (USD)'] || 700000,
   };
 }
 
 function extractMonthly(rows) {
-  const result = { totalRevenue:[], totalOpex:[], ebitda:[], closingCash:[], activeBanks:[], newBanks:[], saasRevenue:[], setupRevenue:[], academyRev:[], usageRev:[], saasTier1:[], saasTier2:[], saasTier3:[], setupTier1:[], setupTier2:[], setupTier3:[] };
+  const result = { totalRevenue:[], totalOpex:[], ebitda:[], closingCash:[], activeBanks:[], newBanks:[], saasRevenue:[], setupRevenue:[], academyRev:[], usageRev:[] };
   const lineMap = {
-    'Total revenue':'totalRevenue',
-    'Total SaaS revenue':'saasRevenue','Total setup revenue':'setupRevenue',
-    'Tier 1 PoC SaaS':'saasTier1','Tier 2 Enterprise SaaS':'saasTier2','Tier 3 Autonomous SaaS':'saasTier3',
-    'Tier 1 PoC setup':'setupTier1','Tier 2 Enterprise setup':'setupTier2','Tier 3 Autonomous setup':'setupTier3',
-    'Academy monthly':'academyRev','Usage revenue':'usageRev',
+    'Total revenue':'totalRevenue','SaaS revenue':'saasRevenue','Setup revenue':'setupRevenue',
+    'Plectra Academy monthly':'academyRev','Usage revenue':'usageRev',
     'Total opex':'totalOpex','EBITDA':'ebitda','Closing cash':'closingCash',
     'Active banks':'activeBanks','New banks':'newBanks'
   };
@@ -606,7 +604,8 @@ function updateMetricsFromSheet(inputs, monthly) {
     if (monthly.ebitda[i]>0 && monthly.ebitda[i+1]>0) { breakEven='M'+(i+1); break; }
   }
   const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  set('metric-seed',       '$'+Math.round(inputs.seed/1000)+'k');
+  const totalCapital = (inputs.seed + inputs.investor2) / 1000000;
+  set('metric-seed', '$'+totalCapital.toFixed(2)+'M');
   set('metric-banks-m36',  banksM36);
   set('metric-arr-m36',    '$'+(arrM36/1000000).toFixed(2)+'M');
   set('metric-moic',       moic+'x');
@@ -654,4 +653,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-

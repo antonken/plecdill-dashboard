@@ -626,24 +626,8 @@ async function loadSheetData() {
     const assumptions = extractAssumptions(Papa.parse(aText,{skipEmptyLines:true}).data);
     const monthly     = extractMonthly(Papa.parse(mText,{skipEmptyLines:true}).data);
     updateMetricsFromSheet(assumptions, monthly);
-    if (monthly.closingCash.length === 36) {
-      liveData = {
-        totalRev: monthly.totalRevenue.length===36 ? monthly.totalRevenue : staticData.totalRev,
-        totalOpex: monthly.totalOpex.length===36 ? monthly.totalOpex : staticData.totalOpex,
-        closing: monthly.closingCash,
-        newBanks: monthly.newBanks.length===36 ? monthly.newBanks : staticData.newBanks,
-        saas: monthly.saasRevenue.length===36 ? monthly.saasRevenue : staticData.saas,
-        setup: monthly.setupRevenue.length===36 ? monthly.setupRevenue : staticData.setup,
-        academy: monthly.academyRev.length===36 ? monthly.academyRev : staticData.academy,
-        usage: monthly.usageRev.length===36 ? monthly.usageRev : staticData.usage,
-        founders: staticData.founders,
-        techPay: staticData.techPay,
-        cloud: staticData.cloud,
-        legal: staticData.legal,
-        mktg: staticData.mktg,
-      };
-      buildCFTable(liveData);
-    }
+    // Always use staticData for the table - Sheet data only updates metrics
+    buildCFTable(staticData);
     const el = document.getElementById('last-updated');
     if (el) el.textContent = 'Live · ' + new Date().toLocaleTimeString('es-AR');
   } catch(err) {
